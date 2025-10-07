@@ -53,14 +53,25 @@ app.layout = html.Div(children=[html.H1('SpaceX Launch Records Dashboard',
 # Add a callback function for `site-dropdown` as input, `success-pie-chart` as output
 @app.callback(Output('success-pie-chart', 'figure'),
               Input('site-dropdown', 'value'))
-def update_pie_chart(selected_site):
+def get_pie_chart(selected_site):    
     if selected_site == 'ALL':
-        fig = px.pie(spacex_df, names='Launch Site', values='class',
-                     title='Total Success Launches by Site')
+        filtered_df = spacex_df[(spacex_df['class'] == 1)]
+        site_counts = filtered_df['Launch Site'].value_counts().reset_index()
+        site_counts.columns = ['site', 'count'] 
+        print(site_counts)  
+        fig = px.pie(site_counts, values='count', names='site',
+                    title='Total Successful Launches by Site')
+        
     else:
         filtered_df = spacex_df[spacex_df['Launch Site'] == selected_site]
-        fig = px.pie(filtered_df, names='class',
-                     title=f'Success vs Failure for site {selected_site}')
+        class_counts = filtered_df['class'].value_counts().reset_index()
+        class_counts.columns = ['class_label', 'count']      
+        print(class_counts)  
+        fig = px.pie(class_counts, values='count', names='class_label',
+                    title=f'Success vs Failure for site {selected_site}')
+
+        fig.show()
+
     return fig
 
 # TASK 4:
@@ -76,11 +87,27 @@ def update_scatter_chart(selected_site, payload_range):
     if selected_site != 'ALL':
         filtered_df = filtered_df[filtered_df['Launch Site'] == selected_site]
 
-    fig = px.scatter(filtered_df, x='Payload Mass (kg)', y='class',
-                     color='Booster Version Category',
-                     title='Payload vs. Outcome Correlation')
+    print(filtered_df)
+
+    fig = px.scatter(
+        filtered_df,
+        x='Payload Mass (kg)',
+        y='class',
+        color='Booster Version Category',
+        title='Payload vs. Outcome Correlation',
+        hover_data=['Launch Site', 'Payload Mass (kg)', 'class']
+    )
+
+    fig.update_layout(
+        xaxis_title='Payload Mass (kg)',
+        yaxis_title='Launch Outcome (0 = Failure, 1 = Success)'
+    )
+  
+    #fig.show()
+
     return fig
 
 # Run the app
 if __name__ == '__main__':
-    app.run()
+    app.run_server(debug=True)
+
